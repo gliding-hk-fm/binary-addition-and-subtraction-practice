@@ -1,1 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Practice binary addition and subtraction using a visual two's complement calculator.">
+  <title>Binary Practice Lab</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="ambient ambient-one" aria-hidden="true"></div>
+  <div class="ambient ambient-two" aria-hidden="true"></div>
 
+  <header class="site-header">
+    <a class="brand" href="#practice" aria-label="Binary Practice Lab home">
+      <span class="brand-mark" aria-hidden="true">01</span>
+      <span>
+        <strong>Binary Practice Lab</strong>
+        <small>Build the bit. See the carry.</small>
+      </span>
+    </a>
+    <div class="header-badge"><span></span> Interactive practice</div>
+  </header>
+
+  <main class="page-shell" id="practice">
+    <section class="hero" aria-labelledby="page-title">
+      <div>
+        <p class="eyebrow">BASE 2 · NUMBER SYSTEM</p>
+        <h1 id="page-title">Make binary<br><em>click.</em></h1>
+        <p class="hero-copy">Practice addition and subtraction while watching each bit, carry, and two’s-complement conversion.</p>
+      </div>
+      <div class="hero-stat" aria-label="Current practice status">
+        <span class="hero-stat-label">SESSION</span>
+        <strong id="sessionScore">0 / 0</strong>
+        <span>correct answers</span>
+      </div>
+    </section>
+
+    <section class="practice-card" aria-labelledby="practice-title">
+      <div class="card-toolbar">
+        <div>
+          <p class="section-kicker">PRACTICE PROBLEM</p>
+          <h2 id="practice-title">Binary arithmetic board</h2>
+        </div>
+        <div class="problem-meta">
+          <span>Problem <strong id="problemNumber">01</strong></span>
+          <span>Width <strong id="bitWidthLabel">8 bits</strong></span>
+        </div>
+      </div>
+
+      <div class="operation-switch" role="group" aria-label="Choose an operation">
+        <button class="operation-button active" type="button" data-operation="add" aria-pressed="true">
+          <span class="operation-symbol">+</span>
+          <span>Addition</span>
+        </button>
+        <button class="operation-button" type="button" data-operation="subtract" aria-pressed="false">
+          <span class="operation-symbol">-</span>
+          <span>Subtraction</span>
+        </button>
+      </div>
+
+      <div class="board-wrap">
+        <div class="weighting-line" aria-label="Base 2 binary weighting line">
+          <div class="weighting-title">
+            <span class="weighting-icon" aria-hidden="true">2</span>
+            <div>
+              <strong>BASE 2 BINARY WEIGHTING LINE</strong>
+              <small>Each column represents a power of two</small>
+            </div>
+          </div>
+          <div class="weighting-values" id="weightingValues" aria-label="Binary place values"></div>
+        </div>
+
+        <div class="arithmetic-board" aria-label="Binary arithmetic demonstration">
+          <div class="board-labels" aria-hidden="true">
+            <span>OPERAND</span>
+            <span>BINARY VALUE</span>
+          </div>
+
+          <div class="bit-row operand-row" id="aRowContainer">
+            <div class="row-label">
+              <span class="row-number">A</span>
+              <span id="aDecimal">0</span>
+            </div>
+            <div class="bits" id="aRow" aria-label="First binary number"></div>
+          </div>
+
+          <div class="operator-row" aria-hidden="true">
+            <span id="operatorDisplay">+</span>
+            <span class="operator-line"></span>
+          </div>
+
+          <div class="bit-row operand-row" id="bRowContainer">
+            <div class="row-label">
+              <span class="row-number">B</span>
+              <span id="bDecimal">0</span>
+            </div>
+            <div class="bits" id="bRow" aria-label="Second binary number"></div>
+          </div>
+
+          <div class="bit-row complement-row" id="complementRowContainer">
+            <div class="row-label">
+              <span class="row-number">2C</span>
+              <span>two's complement</span>
+            </div>
+            <div class="bits complement-bits" id="complementRow" aria-label="Two's complement input"></div>
+          </div>
+
+          <div class="conversion-panel" id="conversionPanel" hidden>
+            <div class="conversion-heading">
+              <span class="conversion-step">STEP 02</span>
+              <div>
+                <strong>Two's-complement conversion</strong>
+                <small id="conversionText">Convert B into its negative form.</small>
+              </div>
+            </div>
+            <div class="conversion-row">
+              <span class="conversion-label">B positive</span>
+              <div class="bits compact" id="bPositiveRow"></div>
+              <span class="conversion-equals">=</span>
+              <span class="conversion-label">B negative</span>
+              <div class="bits compact" id="bComplementRow"></div>
+            </div>
+          </div>
+
+          <div class="carry-row" id="carryRowContainer">
+            <div class="row-label">
+              <span class="row-number">C</span>
+              <span>carry</span>
+            </div>
+            <div class="bits carry-bits" id="carryRow" aria-label="Carry bits"></div>
+          </div>
+
+          <div class="result-row" id="resultRowContainer">
+            <div class="row-label">
+              <span class="row-number">R</span>
+              <span>result</span>
+            </div>
+            <div class="bits result-bits" id="resultRow" aria-label="Binary result"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="answer-panel">
+        <div class="answer-copy">
+          <span class="answer-label">YOUR ANSWER</span>
+          <h3 id="answerPrompt">What is the binary result?</h3>
+          <p id="answerHint">Enter the full 8-bit result, including leading zeros.</p>
+        </div>
+        <form class="answer-form" id="answerForm">
+          <label class="sr-only" for="answerInput">Binary answer</label>
+          <div class="answer-input-wrap">
+            <span>0b</span>
+            <input id="answerInput" type="text" inputmode="text" autocomplete="off" spellcheck="false" maxlength="12" placeholder="00000000" aria-describedby="answerFeedback">
+          </div>
+          <button class="check-button" type="submit">
+            <span>Check answer</span>
+            <span aria-hidden="true">→</span>
+          </button>
+        </form>
+        <div class="answer-feedback" id="answerFeedback" role="status" aria-live="polite"></div>
+      </div>
+
+      <div class="support-grid">
+        <div class="support-card">
+          <span class="support-number">01</span>
+          <div>
+            <strong>Read the place values</strong>
+            <p>Each bit is weighted from $2^7$ down to $2^0$.</p>
+          </div>
+        </div>
+        <div class="support-card">
+          <span class="support-number">02</span>
+          <div>
+            <strong>Follow the carries</strong>
+            <p>A carry moves the next bit to the left.</p>
+          </div>
+        </div>
+        <div class="support-card">
+          <span class="support-number">03</span>
+          <div>
+            <strong>Practice subtraction</strong>
+            <p>Find the two's complement, then add it.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-actions">
+        <button class="secondary-button" id="showAnswerButton" type="button">Show answer</button>
+        <button class="primary-button" id="newProblemButton" type="button">
+          <span aria-hidden="true">↻</span>
+          New problem
+        </button>
+      </div>
+    </section>
+
+    <section class="method-section" aria-labelledby="method-title">
+      <div class="method-heading">
+        <p class="section-kicker">THE METHOD</p>
+        <h2 id="method-title">From positive values to a negative result.</h2>
+      </div>
+      <div class="method-steps">
+        <article>
+          <span>1</span>
+          <h3>Write the positive magnitude</h3>
+          <p>Start with the number you want to subtract in its normal binary form.</p>
+        </article>
+        <article>
+          <span>2</span>
+          <h3>Invert the bits</h3>
+          <p>Change every 0 to 1 and every 1 to 0 across the selected width.</p>
+        </article>
+        <article>
+          <span>3</span>
+          <h3>Add one</h3>
+          <p>The result is the two's complement, which represents the negative value.</p>
+        </article>
+        <article>
+          <span>4</span>
+          <h3>Add to the first operand</h3>
+          <p>Compute the sum in the same fixed-width binary format.</p>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>Binary Practice Lab</span>
+    <span>Learn by doing · 2<sup>n</sup> place values</span>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
