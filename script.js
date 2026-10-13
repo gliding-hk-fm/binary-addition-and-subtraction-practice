@@ -9,16 +9,13 @@
     weightingValues: document.getElementById("weightingValues"),
     aRow: document.getElementById("aRow"),
     bRow: document.getElementById("bRow"),
+    complementRowContainer: document.getElementById("complementRowContainer"),
     complementRow: document.getElementById("complementRow"),
     aDecimal: document.getElementById("aDecimal"),
     bDecimal: document.getElementById("bDecimal"),
     carryRow: document.getElementById("carryRow"),
     resultRow: document.getElementById("resultRow"),
     operatorDisplay: document.getElementById("operatorDisplay"),
-    conversionPanel: document.getElementById("conversionPanel"),
-    bPositiveRow: document.getElementById("bPositiveRow"),
-    bComplementRow: document.getElementById("bComplementRow"),
-    conversionText: document.getElementById("conversionText"),
     answerForm: document.getElementById("answerForm"),
     answerInput: document.getElementById("answerInput"),
     answerFeedback: document.getElementById("answerFeedback"),
@@ -27,7 +24,6 @@
     problemNumber: document.getElementById("problemNumber"),
     bitWidthLabel: document.getElementById("bitWidthLabel"),
     sessionScore: document.getElementById("sessionScore"),
-    showAnswerButton: document.getElementById("showAnswerButton"),
     newProblemButton: document.getElementById("newProblemButton")
   };
 
@@ -68,10 +64,6 @@
     const inverted = bits.map(bit => bit ^ 1);
     const value = (1 << width) - toDecimal(inverted);
     return value === (1 << width) ? 0 : value;
-  }
-
-  function decimalToBinary(value) {
-    return pad(value.toString(2), width);
   }
 
   function binaryToDecimal(value) {
@@ -167,23 +159,17 @@
     renderBits(elements.carryRow, carryBits, { className: "bit", editable: true, rowName: "carry" });
     renderBits(elements.resultRow, resultBits, { className: "bit", editable: true, rowName: "result" });
 
+    elements.complementRowContainer.hidden = state.operation === "add";
+    document.querySelectorAll(".editable-bit").forEach(input => {
+      input.value = "";
+      input.dataset.bit = "";
+      const weight = width - Number(input.dataset.position) - 1;
+      input.setAttribute("aria-label", `${input.dataset.row} bit at weight ${weight}`);
+    });
+
     elements.aDecimal.textContent = state.a;
     elements.bDecimal.textContent = state.b;
     elements.operatorDisplay.textContent = state.operation === "add" ? "+" : "−";
-  }
-
-  function renderConversion() {
-    if (state.operation !== "subtract") {
-      elements.conversionPanel.hidden = true;
-      return;
-    }
-
-    const bPositive = toBits(state.b);
-    const bComplement = toBits(twoComplement(state.b));
-    renderBits(elements.bPositiveRow, bPositive, { className: "bit wide-row" });
-    renderBits(elements.bComplementRow, bComplement, { className: "bit wide-row" });
-    elements.conversionPanel.hidden = false;
-    elements.conversionText.textContent = `${state.b} is ${decimalToBinary(state.b)}. Its inverse plus one is ${bComplement.join("")}, the 8-bit two’s-complement representation of ${-state.b}.`;
   }
 
   function updateBitInput(input) {
@@ -192,20 +178,6 @@
     input.classList.toggle("invalid", !valid);
     input.dataset.bit = valid ? value : "";
     return valid;
-  }
-
-  function syncComputedRows() {
-    const resultBits = toBits(state.result);
-    const carryBits = getCarryBits();
-
-    elements.resultRow.querySelectorAll(".editable-bit").forEach((input, index) => {
-      input.value = resultBits[index];
-      input.dataset.bit = resultBits[index];
-    });
-    elements.carryRow.querySelectorAll(".editable-bit").forEach((input, index) => {
-      input.value = carryBits[index];
-      input.dataset.bit = carryBits[index];
-    });
   }
 
   function updateOperandCell(input, row) {
@@ -223,7 +195,6 @@
     state.carries = getCarryBits();
     elements.aDecimal.textContent = state.a;
     elements.bDecimal.textContent = state.b;
-    syncComputedRows();
   }
 
   function updateWorkCell(input) {
@@ -293,10 +264,7 @@
     elements.answerFeedback.className = "answer-feedback";
     elements.answerPrompt.textContent = "What is the binary result?";
     elements.answerHint.textContent = "Enter the full 8-bit result, including leading zeros.";
-    elements.showAnswerButton.textContent = "Show answer";
-
     renderOperationRows();
-    renderConversion();
   }
 
   function getRandomInteger(min, max) {
@@ -331,25 +299,12 @@
       elements.answerFeedback.textContent = `Correct — ${expected} = ${state.result}.`;
       elements.answerFeedback.className = "answer-feedback correct";
       elements.answerInput.classList.remove("invalid");
-      elements.showAnswerButton.textContent = "Next problem";
     } else {
       elements.answerInput.classList.add("invalid");
-      elements.answerFeedback.textContent = `Not quite. The correct result is ${expected}.`;
+      elements.answerFeedback.textContent = "Not quite. Check your work and try again.";
       elements.answerFeedback.className = "answer-feedback incorrect";
     }
 
-    updateSessionScore();
-  }
-
-  function showAnswer() {
-    const expected = getExpectedAnswer();
-    elements.answerInput.value = expected;
-    elements.answerInput.classList.remove("invalid");
-    elements.answerFeedback.textContent = `Answer shown: 0b${expected}.`;
-    elements.answerFeedback.className = "answer-feedback";
-    elements.answerPrompt.textContent = "Check the highlighted result";
-    elements.answerHint.textContent = "Use the red result row to confirm each bit.";
-    state.answered = true;
     updateSessionScore();
   }
 
@@ -368,7 +323,6 @@
     state.result = getResult();
     state.carries = getCarryBits();
     renderOperationRows();
-    renderConversion();
     elements.answerInput.value = "";
     elements.answerFeedback.textContent = "";
     elements.answerFeedback.className = "answer-feedback";
@@ -380,14 +334,6 @@
 
   elements.answerForm.addEventListener("submit", checkAnswer);
   elements.newProblemButton.addEventListener("click", createProblem);
-  elements.showAnswerButton.addEventListener("click", () => {
-    if (state.answered && elements.showAnswerButton.textContent === "Next problem") {
-      state.problemNumber += 1;
-      createProblem();
-    } else {
-      showAnswer();
-    }
-  });
 
   elements.answerInput.addEventListener("input", () => {
     elements.answerInput.value = elements.answerInput.value.replace(/[^01]/g, "").toLowerCase();
@@ -406,7 +352,10 @@
   state.result = getResult();
   state.carries = getCarryBits();
   renderOperationRows();
-  renderConversion();
   bindEditableBits();
+  document.querySelectorAll(".editable-bit").forEach(input => {
+    input.value = "";
+    input.dataset.bit = "";
+  });
   updateSessionScore();
 })();

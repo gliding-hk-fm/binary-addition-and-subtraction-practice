@@ -106,23 +106,6 @@
             <div class="bits complement-bits" id="complementRow" aria-label="Two's complement input"></div>
           </div>
 
-          <div class="conversion-panel" id="conversionPanel" hidden>
-            <div class="conversion-heading">
-              <span class="conversion-step">STEP 02</span>
-              <div>
-                <strong>Two's-complement conversion</strong>
-                <small id="conversionText">Convert B into its negative form.</small>
-              </div>
-            </div>
-            <div class="conversion-row">
-              <span class="conversion-label">B positive</span>
-              <div class="bits compact" id="bPositiveRow"></div>
-              <span class="conversion-equals">=</span>
-              <span class="conversion-label">B negative</span>
-              <div class="bits compact" id="bComplementRow"></div>
-            </div>
-          </div>
-
           <div class="carry-row" id="carryRowContainer">
             <div class="row-label">
               <span class="row-number">C</span>
@@ -151,7 +134,7 @@
           <label class="sr-only" for="answerInput">Binary answer</label>
           <div class="answer-input-wrap">
             <span>0b</span>
-            <input id="answerInput" type="text" inputmode="text" autocomplete="off" spellcheck="false" maxlength="12" placeholder="00000000" aria-describedby="answerFeedback">
+            <input id="answerInput" type="text" inputmode="text" autocomplete="off" spellcheck="false" maxlength="12" aria-describedby="answerFeedback">
           </div>
           <button class="check-button" type="submit">
             <span>Check answer</span>
@@ -186,7 +169,6 @@
       </div>
 
       <div class="card-actions">
-        <button class="secondary-button" id="showAnswerButton" type="button">Show answer</button>
         <button class="primary-button" id="newProblemButton" type="button">
           <span aria-hidden="true">↻</span>
           New problem
