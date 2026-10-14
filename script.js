@@ -4,6 +4,40 @@
   const width = 8;
   const maxValue = (1 << width) - 1;
   const placeValues = Array.from({ length: width }, (_, index) => Math.pow(2, width - index - 1));
+  const storageKeys = {
+    points: "binaryPracticePoints",
+    preferences: "binaryPracticePreferences",
+    leaderboard: "binaryPracticeLeaderboard"
+  };
+
+  function readStoredValue(key, fallback) {
+    try {
+      return localStorage.getItem(key) ?? fallback;
+    } catch {
+      return fallback;
+    }
+  }
+
+  function readStoredJson(key, fallback) {
+    try {
+      const value = localStorage.getItem(key);
+      return value ? JSON.parse(value) : fallback;
+    } catch {
+      return fallback;
+    }
+  }
+
+  function writeStoredValue(key, value) {
+    try {
+      localStorage.setItem(key, value);
+    } catch {
+      return false;
+    }
+    return true;
+  }
+
+  const savedPreferences = readStoredJson(storageKeys.preferences, {});
+  const savedPoints = Number(readStoredValue(storageKeys.points, "0"));
 
   const elements = {
     weightingValues: document.getElementById("weightingValues"),
@@ -18,13 +52,25 @@
     operatorDisplay: document.getElementById("operatorDisplay"),
     answerForm: document.getElementById("answerForm"),
     answerInput: document.getElementById("answerInput"),
+    answerSubmitButton: document.querySelector("#answerForm button[type='submit']"),
     answerFeedback: document.getElementById("answerFeedback"),
     answerPrompt: document.getElementById("answerPrompt"),
     answerHint: document.getElementById("answerHint"),
     problemNumber: document.getElementById("problemNumber"),
     bitWidthLabel: document.getElementById("bitWidthLabel"),
-    sessionScore: document.getElementById("sessionScore"),
-    newProblemButton: document.getElementById("newProblemButton")
+    pointsDisplay: document.getElementById("pointsDisplay"),
+    newProblemButton: document.getElementById("newProblemButton"),
+    instructions: document.getElementById("additionInstructions"),
+    leaderboardList: document.getElementById("leaderboardList"),
+    leaderboardEmpty: document.getElementById("leaderboardEmpty"),
+    settingsDialog: document.getElementById("settingsDialog"),
+    settingsForm: document.getElementById("settingsForm"),
+    openSettingsButton: document.getElementById("openSettingsButton"),
+    closeSettingsButton: document.getElementById("closeSettingsButton"),
+    cancelSettingsButton: document.getElementById("cancelSettingsButton"),
+    leaderboardOptIn: document.getElementById("leaderboardOptIn"),
+    leaderboardName: document.getElementById("leaderboardName"),
+    darkModeToggle: document.getElementById("darkModeToggle")
   };
 
   const state = {
@@ -34,10 +80,105 @@
     result: 0,
     carries: [],
     problemNumber: 0,
-    correct: 0,
-    attempted: 0,
+    points: Number.isFinite(savedPoints) ? savedPoints : 0,
+    leaderboardConsent: typeof savedPreferences.leaderboardConsent === "boolean"
+      ? savedPreferences.leaderboardConsent
+      : null,
+    leaderboardName: typeof savedPreferences.leaderboardName === "string"
+      ? savedPreferences.leaderboardName
+      : "Player",
+    theme: savedPreferences.theme === "light" ? "light" : "dark",
+    incorrectAttempts: 0,
+    instructionsUsed: false,
     answered: false
   };
+
+  function getLeaderboardEntries() {
+    const entries = readStoredJson(storageKeys.leaderboard, []);
+    return Array.isArray(entries)
+      ? entries.filter(entry => entry && typeof entry.name === "string" && Number.isFinite(entry.points))
+      : [];
+  }
+
+  function saveLeaderboardScore() {
+    if (!state.leaderboardConsent) return;
+    const name = state.leaderboardName.trim() || "Player";
+    const entries = getLeaderboardEntries();
+    const existing = entries.find(entry => entry.name.toLowerCase() === name.toLowerCase());
+    if (existing) existing.points = state.points;
+    else entries.push({ name, points: state.points });
+    entries.sort((first, second) => second.points - first.points);
+    writeStoredValue(storageKeys.leaderboard, JSON.stringify(entries.slice(0, 20)));
+  }
+
+  function renderLeaderboard() {
+    const entries = state.leaderboardConsent ? getLeaderboardEntries() : [];
+    elements.leaderboardList.replaceChildren();
+    entries.forEach((entry, index) => {
+      const item = document.createElement("li");
+      const rank = document.createElement("span");
+      const name = document.createElement("span");
+      const points = document.createElement("strong");
+      rank.textContent = String(index + 1).padStart(2, "0");
+      name.textContent = entry.name;
+      points.textContent = `${entry.points} pts`;
+      item.append(rank, name, points);
+      elements.leaderboardList.appendChild(item);
+    });
+    elements.leaderboardEmpty.hidden = entries.length > 0;
+    elements.leaderboardEmpty.textContent = state.leaderboardConsent
+      ? "No local scores yet."
+      : "Opt in through Settings to add your score.";
+  }
+
+  function renderPoints() {
+    elements.pointsDisplay.textContent = String(state.points);
+  }
+
+  function updatePoints(change) {
+    state.points += change;
+    writeStoredValue(storageKeys.points, String(state.points));
+    renderPoints();
+    saveLeaderboardScore();
+    renderLeaderboard();
+  }
+
+  function applyTheme() {
+    document.documentElement.dataset.theme = state.theme;
+    elements.darkModeToggle.checked = state.theme === "dark";
+  }
+
+  function savePreferences() {
+    const wasOptedIn = state.leaderboardConsent;
+    const previousName = state.leaderboardName;
+    state.leaderboardConsent = elements.leaderboardOptIn.checked;
+    state.leaderboardName = elements.leaderboardName.value.trim() || "Player";
+    state.theme = elements.darkModeToggle.checked ? "dark" : "light";
+    const preferences = {
+      leaderboardConsent: state.leaderboardConsent,
+      leaderboardName: state.leaderboardName,
+      theme: state.theme
+    };
+    writeStoredValue(storageKeys.preferences, JSON.stringify(preferences));
+    elements.leaderboardName.value = state.leaderboardName;
+    applyTheme();
+
+    if (wasOptedIn && !state.leaderboardConsent) {
+      const namesToRemove = [previousName, state.leaderboardName].map(name => name.toLowerCase());
+      const entries = getLeaderboardEntries().filter(entry => !namesToRemove.includes(entry.name.toLowerCase()));
+      writeStoredValue(storageKeys.leaderboard, JSON.stringify(entries));
+    } else if (state.leaderboardConsent) {
+      saveLeaderboardScore();
+    }
+    renderLeaderboard();
+  }
+
+  function openSettings() {
+    elements.leaderboardOptIn.checked = state.leaderboardConsent === true;
+    elements.leaderboardName.value = state.leaderboardName;
+    elements.darkModeToggle.checked = state.theme === "dark";
+    elements.settingsDialog.showModal();
+  }
 
   function pad(value, length = width) {
     return String(value).padStart(length, "0");
@@ -264,6 +405,9 @@
   function createProblem() {
     state.problemNumber += 1;
     state.answered = false;
+    state.incorrectAttempts = 0;
+    state.instructionsUsed = false;
+    elements.instructions.open = false;
     state.a = getRandomInteger(0, 127);
     state.b = getRandomInteger(0, 127);
 
@@ -278,6 +422,8 @@
 
     elements.problemNumber.textContent = pad(state.problemNumber, 2);
     elements.answerInput.value = "";
+    elements.answerInput.disabled = false;
+    elements.answerSubmitButton.disabled = false;
     elements.answerInput.classList.remove("invalid");
     elements.answerFeedback.textContent = "";
     elements.answerFeedback.className = "answer-feedback";
@@ -300,7 +446,6 @@
 
     const entered = elements.answerInput.value.trim().replace(/[^01]/g, "");
     const expected = getExpectedAnswer();
-    state.attempted += 1;
 
     if (entered.length === 0) {
       elements.answerInput.classList.add("invalid");
@@ -317,27 +462,40 @@
     const isCorrect = enteredValue === expectedValue;
 
     if (isCorrect) {
-      state.correct += 1;
       state.answered = true;
+      elements.answerInput.disabled = true;
+      elements.answerSubmitButton.disabled = true;
+      updatePoints(10);
       elements.answerFeedback.textContent = `Correct — ${expected} = ${expectedValue}.`;
       elements.answerFeedback.className = "answer-feedback correct";
       elements.answerInput.classList.remove("invalid");
     } else {
+      state.incorrectAttempts += 1;
+      updatePoints(-2);
       elements.answerInput.classList.add("invalid");
-      elements.answerFeedback.textContent = "Not quite. Check your work and try again.";
+      if (state.incorrectAttempts >= 3) {
+        state.answered = true;
+        elements.answerInput.disabled = true;
+        elements.answerSubmitButton.disabled = true;
+        const overflowText = getOverflowBit() ? " with overflow 1" : "";
+        elements.answerHint.textContent = `Correct answer: ${expected}${overflowText} (${expectedValue}).`;
+        elements.answerFeedback.textContent = `The correct answer is ${expected}${overflowText} (${expectedValue}).`;
+      } else {
+        const triesRemaining = 3 - state.incorrectAttempts;
+        elements.answerFeedback.textContent = `Not quite. ${triesRemaining} ${triesRemaining === 1 ? "try" : "tries"} left.`;
+      }
       elements.answerFeedback.className = "answer-feedback incorrect";
     }
-
-    updateSessionScore();
-  }
-
-  function updateSessionScore() {
-    elements.sessionScore.textContent = `${state.correct} / ${state.attempted}`;
   }
 
   function updateOperation(operation) {
     if (operation === state.operation) return;
     state.operation = operation;
+    state.answered = false;
+    state.incorrectAttempts = 0;
+    state.instructionsUsed = false;
+    elements.instructions.open = false;
+    elements.instructions.hidden = operation !== "add";
     document.querySelectorAll(".operation-button").forEach(button => {
       const active = button.dataset.operation === operation;
       button.classList.toggle("active", active);
@@ -347,6 +505,9 @@
     state.carries = getCarryBits();
     renderOperationRows();
     elements.answerInput.value = "";
+    elements.answerInput.disabled = false;
+    elements.answerSubmitButton.disabled = false;
+    elements.answerHint.textContent = "Enter the full 8-bit result, including leading zeros.";
     elements.answerFeedback.textContent = "";
     elements.answerFeedback.className = "answer-feedback";
   }
@@ -358,6 +519,32 @@
   elements.answerForm.addEventListener("submit", checkAnswer);
   elements.newProblemButton.addEventListener("click", createProblem);
 
+  elements.instructions.addEventListener("toggle", () => {
+    if (!elements.instructions.open || state.operation !== "add" || state.instructionsUsed || state.answered) return;
+    state.instructionsUsed = true;
+    updatePoints(-3);
+  });
+
+  elements.openSettingsButton.addEventListener("click", openSettings);
+  elements.closeSettingsButton.addEventListener("click", () => elements.settingsDialog.close());
+  elements.cancelSettingsButton.addEventListener("click", () => {
+    if (state.leaderboardConsent === null) {
+      state.leaderboardConsent = false;
+      writeStoredValue(storageKeys.preferences, JSON.stringify({
+        leaderboardConsent: false,
+        leaderboardName: state.leaderboardName,
+        theme: state.theme
+      }));
+      renderLeaderboard();
+    }
+    elements.settingsDialog.close();
+  });
+  elements.settingsForm.addEventListener("submit", event => {
+    event.preventDefault();
+    savePreferences();
+    elements.settingsDialog.close();
+  });
+
   elements.answerInput.addEventListener("input", () => {
     elements.answerInput.value = elements.answerInput.value.replace(/[^01]/g, "").toLowerCase();
     elements.answerInput.classList.remove("invalid");
@@ -368,6 +555,10 @@
   });
 
   renderWeighting();
+  elements.leaderboardOptIn.checked = state.leaderboardConsent === true;
+  elements.leaderboardName.value = state.leaderboardName;
+  elements.instructions.hidden = state.operation !== "add";
+  applyTheme();
   state.a = 13;
   state.b = 7;
   state.aBits = toBits(state.a);
@@ -380,5 +571,8 @@
     input.value = "";
     input.dataset.bit = "";
   });
-  updateSessionScore();
+  renderPoints();
+  renderLeaderboard();
+
+  if (state.leaderboardConsent === null) openSettings();
 })();

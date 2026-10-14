@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -20,6 +20,7 @@
       </span>
     </a>
     <div class="header-badge"><span></span> Interactive practice</div>
+    <button class="settings-button" id="openSettingsButton" type="button" aria-haspopup="dialog">Settings</button>
   </header>
 
   <main class="page-shell" id="practice">
@@ -30,9 +31,9 @@
         <p class="hero-copy">Practice addition and subtraction while watching each bit, carry, and two’s-complement conversion.</p>
       </div>
       <div class="hero-stat" aria-label="Current practice status">
-        <span class="hero-stat-label">SESSION</span>
-        <strong id="sessionScore">0 / 0</strong>
-        <span>correct answers</span>
+        <span class="hero-stat-label">TOTAL POINTS</span>
+        <strong id="pointsDisplay">0</strong>
+        <span>points</span>
       </div>
     </section>
 
@@ -144,29 +145,14 @@
         <div class="answer-feedback" id="answerFeedback" role="status" aria-live="polite"></div>
       </div>
 
-      <div class="support-grid">
-        <div class="support-card">
-          <span class="support-number">01</span>
-          <div>
-            <strong>Read the place values</strong>
-            <p>Each bit is weighted from $2^7$ down to $2^0$.</p>
-          </div>
-        </div>
-        <div class="support-card">
-          <span class="support-number">02</span>
-          <div>
-            <strong>Follow the carries</strong>
-            <p>A carry moves the next bit to the left.</p>
-          </div>
-        </div>
-        <div class="support-card">
-          <span class="support-number">03</span>
-          <div>
-            <strong>Practice subtraction</strong>
-            <p>Find the two's complement, then add it.</p>
-          </div>
-        </div>
-      </div>
+      <details class="instruction-disclosure" id="additionInstructions">
+        <summary>Addition instructions <span>−3 points when opened</span></summary>
+        <ol>
+          <li>Start at the rightmost column and add the two bits with any carry from the previous column.</li>
+          <li>Write the sum bit in the result row. If the sum is 2 or 3, carry 1 into the next column.</li>
+          <li>Continue toward the left. Put any final carry in the overflow bit.</li>
+        </ol>
+      </details>
 
       <div class="card-actions">
         <button class="primary-button" id="newProblemButton" type="button">
@@ -176,40 +162,58 @@
       </div>
     </section>
 
-    <section class="method-section" aria-labelledby="method-title">
-      <div class="method-heading">
-        <p class="section-kicker">THE METHOD</p>
-        <h2 id="method-title">From positive values to a negative result.</h2>
+    <section class="leaderboard-section" aria-labelledby="leaderboard-title">
+      <div class="leaderboard-heading">
+        <div>
+          <p class="section-kicker">LOCAL SCORES</p>
+          <h2 id="leaderboard-title">Leaderboard</h2>
+        </div>
+        <p>Scores stay in this browser.</p>
       </div>
-      <div class="method-steps">
-        <article>
-          <span>1</span>
-          <h3>Write the positive magnitude</h3>
-          <p>Start with the number you want to subtract in its normal binary form.</p>
-        </article>
-        <article>
-          <span>2</span>
-          <h3>Invert the bits</h3>
-          <p>Change every 0 to 1 and every 1 to 0 across the selected width.</p>
-        </article>
-        <article>
-          <span>3</span>
-          <h3>Add one</h3>
-          <p>The result is the two's complement, which represents the negative value.</p>
-        </article>
-        <article>
-          <span>4</span>
-          <h3>Add to the first operand</h3>
-          <p>Compute the sum in the same fixed-width binary format.</p>
-        </article>
-      </div>
+      <ol class="leaderboard-list" id="leaderboardList" aria-live="polite"></ol>
+      <p class="leaderboard-empty" id="leaderboardEmpty">Opt in through Settings to add your score.</p>
     </section>
   </main>
 
   <footer>
     <span>Binary Practice Lab</span>
-    <span>Learn by doing · 2<sup>n</sup> place values</span>
+    <span>10 points per correct answer · local scores only</span>
   </footer>
+
+  <dialog class="settings-dialog" id="settingsDialog" aria-labelledby="settingsTitle">
+    <form id="settingsForm">
+      <div class="settings-heading">
+        <div>
+          <p class="section-kicker">PREFERENCES</p>
+          <h2 id="settingsTitle">Settings</h2>
+        </div>
+        <button class="settings-close" id="closeSettingsButton" type="button" aria-label="Close settings">×</button>
+      </div>
+      <p class="settings-intro" id="settingsIntro">Would you like to appear on this browser's leaderboard?</p>
+      <label class="setting-row" for="leaderboardOptIn">
+        <span>
+          <strong>Include me in the leaderboard</strong>
+          <small>Your name and points are saved only in this browser.</small>
+        </span>
+        <input id="leaderboardOptIn" type="checkbox">
+      </label>
+      <label class="setting-field" for="leaderboardName">
+        <span>Display name</span>
+        <input id="leaderboardName" type="text" maxlength="24" autocomplete="nickname" value="Player">
+      </label>
+      <label class="setting-row" for="darkModeToggle">
+        <span>
+          <strong>Dark mode</strong>
+          <small>Use the dark appearance by default.</small>
+        </span>
+        <input id="darkModeToggle" type="checkbox" role="switch" checked>
+      </label>
+      <div class="settings-actions">
+        <button class="secondary-button" id="cancelSettingsButton" type="button">Not now</button>
+        <button class="primary-button" type="submit">Save settings</button>
+      </div>
+    </form>
+  </dialog>
 
   <script src="script.js"></script>
 </body>
