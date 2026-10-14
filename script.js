@@ -100,6 +100,12 @@
     });
   }
 
+  function getOverflowBit() {
+    return state.operation === "add"
+      ? (state.a + state.b) >> width
+      : Number(state.a < state.b);
+  }
+
   function makeBit(value, weight, className = "bit", label = "", editable = false) {
     const bit = editable
       ? document.createElement("input")
@@ -123,8 +129,17 @@
     return bit;
   }
 
-  function renderBits(container, bits, { className = "bit", editable = false, rowName = "" } = {}) {
+  function renderBits(container, bits, { className = "bit", editable = false, rowName = "", overflow = false } = {}) {
     container.replaceChildren();
+    if (overflow) {
+      const element = makeBit(0, "overflow", className, `${rowName} overflow bit`, editable);
+      if (editable) {
+        element.classList.add("overflow-bit");
+        element.dataset.row = rowName;
+        element.dataset.position = "overflow";
+      }
+      container.appendChild(element);
+    }
     bits.forEach((bit, index) => {
       const weight = width - index - 1;
       const element = makeBit(bit, weight, className, `${rowName} bit`, editable);
@@ -156,15 +171,16 @@
     renderBits(elements.aRow, aBits, { className: "bit", editable: true, rowName: "A" });
     renderBits(elements.bRow, bBits, { className: "bit", editable: true, rowName: "B" });
     renderBits(elements.complementRow, toBits(twoComplement(state.b)), { className: "bit", editable: true, rowName: "two's complement" });
-    renderBits(elements.carryRow, carryBits, { className: "bit", editable: true, rowName: "carry" });
-    renderBits(elements.resultRow, resultBits, { className: "bit", editable: true, rowName: "result" });
+    renderBits(elements.carryRow, carryBits, { className: "bit", editable: true, rowName: "carry", overflow: true });
+    renderBits(elements.resultRow, resultBits, { className: "bit", editable: true, rowName: "result", overflow: true });
 
     elements.complementRowContainer.hidden = state.operation === "add";
     document.querySelectorAll(".editable-bit").forEach(input => {
       input.value = "";
       input.dataset.bit = "";
+      const isOverflow = input.dataset.position === "overflow";
       const weight = width - Number(input.dataset.position) - 1;
-      input.setAttribute("aria-label", `${input.dataset.row} bit at weight ${weight}`);
+      input.setAttribute("aria-label", isOverflow ? `${input.dataset.row} overflow bit` : `${input.dataset.row} bit at weight ${weight}`);
     });
 
     elements.aDecimal.textContent = state.a;
@@ -199,9 +215,12 @@
 
   function updateWorkCell(input) {
     if (!updateBitInput(input)) return;
-    const expected = input.dataset.row === "carry"
-      ? state.carries[Number(input.dataset.position)]
-      : state.result.toString(2).padStart(width, "0")[Number(input.dataset.position)];
+    const isOverflow = input.dataset.position === "overflow";
+    const expected = isOverflow
+      ? getOverflowBit()
+      : input.dataset.row === "carry"
+        ? state.carries[Number(input.dataset.position)]
+        : state.result.toString(2).padStart(width, "0")[Number(input.dataset.position)];
     input.classList.toggle("incorrect", input.dataset.bit !== String(expected));
   }
 
@@ -291,12 +310,16 @@
     }
 
     const normalized = entered.padStart(width, "0").slice(-width);
-    const isCorrect = normalized === expected;
+    const overflowInput = elements.resultRow.querySelector(".overflow-bit");
+    const enteredOverflow = overflowInput.dataset.bit === "1" ? 1 : 0;
+    const enteredValue = binaryToDecimal(normalized) + enteredOverflow * 512;
+    const expectedValue = state.result + getOverflowBit() * 512;
+    const isCorrect = enteredValue === expectedValue;
 
     if (isCorrect) {
       state.correct += 1;
       state.answered = true;
-      elements.answerFeedback.textContent = `Correct — ${expected} = ${state.result}.`;
+      elements.answerFeedback.textContent = `Correct — ${expected} = ${expectedValue}.`;
       elements.answerFeedback.className = "answer-feedback correct";
       elements.answerInput.classList.remove("invalid");
     } else {

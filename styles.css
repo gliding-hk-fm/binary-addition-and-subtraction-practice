@@ -477,8 +477,12 @@ button {
 
 .weighting-values {
   display: grid;
-  grid-template-columns: repeat(8, 1fr);
+  grid-template-columns: repeat(9, minmax(44px, 1fr));
   gap: 6px;
+}
+
+.weighting-values::before {
+  content: "";
 }
 
 .weight-value {
@@ -512,7 +516,9 @@ button {
 }
 
 .board-labels,
-.bit-row {
+.bit-row,
+.carry-row,
+.result-row {
   display: grid;
   grid-template-columns: 120px minmax(500px, 1fr);
   align-items: center;
@@ -593,6 +599,15 @@ button {
   min-width: 0;
 }
 
+.arithmetic-board .bits {
+  grid-template-columns: repeat(9, minmax(44px, 1fr));
+}
+
+.operand-row .bits::before,
+.complement-row .bits::before {
+  content: "";
+}
+
 .editable-bit {
   width: 100%;
   min-width: 0;
@@ -609,6 +624,11 @@ button {
   cursor: text;
   text-align: center;
   transition: transform .18s ease, background .18s ease, box-shadow .18s ease;
+}
+
+.overflow-bit {
+  width: auto;
+  margin-right: 4px;
 }
 
 .editable-bit:focus {
